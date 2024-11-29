@@ -27,7 +27,8 @@ export const AddCategoryDialog = ({
     onSave({
       name,
       budget: Number(budget),
-      color
+      color,
+      user_id: initialCategory?.user_id || ''
     });
     onOpenChange(false);
   };

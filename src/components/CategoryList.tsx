@@ -12,7 +12,7 @@ interface CategoryListProps {
 
 export const CategoryList = ({ categories, expenses, onAddCategory, onEditCategory }: CategoryListProps) => {
   const getCategoryExpenses = (categoryId: string) => {
-    return expenses.filter(e => e.categoryId === categoryId)
+    return expenses.filter(e => e.category_id === categoryId)
       .reduce((sum, exp) => sum + exp.amount, 0);
   };
 

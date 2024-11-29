@@ -21,7 +21,7 @@ export const AddExpenseDialog = ({
   categories,
   initialExpense 
 }: AddExpenseDialogProps) => {
-  const [categoryId, setCategoryId] = useState(initialExpense?.categoryId || '');
+  const [category_id, setCategoryId] = useState(initialExpense?.category_id || '');
   const [amount, setAmount] = useState(initialExpense?.amount.toString() || '');
   const [description, setDescription] = useState(initialExpense?.description || '');
   const [date, setDate] = useState(initialExpense?.date || new Date().toISOString().split('T')[0]);
@@ -29,10 +29,11 @@ export const AddExpenseDialog = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSave({
-      categoryId,
+      category_id,
       amount: Number(amount),
       description,
-      date
+      date,
+      user_id: initialExpense?.user_id || ''
     });
     onOpenChange(false);
   };
@@ -48,7 +49,7 @@ export const AddExpenseDialog = ({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="category">Catégorie</Label>
-            <Select value={categoryId} onValueChange={setCategoryId} required>
+            <Select value={category_id} onValueChange={setCategoryId} required>
               <SelectTrigger>
                 <SelectValue placeholder="Sélectionner une catégorie" />
               </SelectTrigger>
