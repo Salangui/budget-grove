@@ -20,8 +20,19 @@ export const CategoryList = ({
   onDeleteCategory 
 }: CategoryListProps) => {
   const getCategoryExpenses = (categoryId: string) => {
+    if (!categoryId) return 0;
     return expenses.filter(e => e.category_id === categoryId)
       .reduce((sum, exp) => sum + exp.amount, 0);
+  };
+
+  const handleEditCategory = (category: Category) => {
+    if (!category?.id) return;
+    onEditCategory(category);
+  };
+
+  const handleDeleteCategory = (category: Category) => {
+    if (!category?.id) return;
+    onDeleteCategory(category);
   };
 
   return (
@@ -35,6 +46,7 @@ export const CategoryList = ({
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {categories.map(category => {
+          if (!category?.id) return null;
           const spent = getCategoryExpenses(category.id);
           const progress = (spent / category.budget) * 100;
           const isOverBudget = spent > category.budget;
@@ -50,7 +62,7 @@ export const CategoryList = ({
               <div className="flex justify-between items-center mb-2">
                 <div 
                   className="flex-1 cursor-pointer"
-                  onClick={() => onEditCategory(category)}
+                  onClick={() => handleEditCategory(category)}
                 >
                   <div className="flex items-center space-x-2">
                     <h3 className="font-semibold">{category.name}</h3>
@@ -63,7 +75,7 @@ export const CategoryList = ({
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => onDeleteCategory(category)}
+                  onClick={() => handleDeleteCategory(category)}
                   className="text-red-500 hover:text-red-600 hover:bg-red-50"
                 >
                   <Trash2 className="h-4 w-4" />

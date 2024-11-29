@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Category } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/components/ui/use-toast';
 
 interface AddCategoryDialogProps {
   open: boolean;
@@ -20,13 +21,21 @@ export const AddCategoryDialog = ({
   initialCategory 
 }: AddCategoryDialogProps) => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [name, setName] = useState(initialCategory?.name || '');
   const [budget, setBudget] = useState(initialCategory?.budget.toString() || '');
   const [color, setColor] = useState(initialCategory?.color || '#0EA5E9');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user?.id) {
+      toast({
+        title: "Erreur",
+        description: "Vous devez être connecté pour effectuer cette action",
+        variant: "destructive"
+      });
+      return;
+    }
     
     onSave({
       name,
