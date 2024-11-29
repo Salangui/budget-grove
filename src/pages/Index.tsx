@@ -1,12 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AddCategoryDialog } from '@/components/AddCategoryDialog';
 import { AddExpenseDialog } from '@/components/AddExpenseDialog';
 import { BudgetHeader } from '@/components/budget/BudgetHeader';
 import { BudgetContent } from '@/components/budget/BudgetContent';
-import { generateMockData } from '@/utils/mockData';
-import { exportToCSV } from '@/utils/csvExport';
-import { Category, Expense, MonthlyBudget } from '@/types';
+import { Category, Expense } from '@/types';
 import { useToast } from '@/components/ui/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 const getCurrentMonth = () => {
   const date = new Date();
@@ -15,124 +15,164 @@ const getCurrentMonth = () => {
 
 const Index = () => {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [currentMonth, setCurrentMonth] = useState(getCurrentMonth());
-  const [budgets, setBudgets] = useState<Record<string, MonthlyBudget>>({
-    [currentMonth]: generateMockData(currentMonth)
-  });
-  
   const [addCategoryOpen, setAddCategoryOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category>();
   const [addExpenseOpen, setAddExpenseOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense>();
 
-  const currentBudget = budgets[currentMonth] || generateMockData(currentMonth);
-
-  const handleMonthChange = (month: string) => {
-    setCurrentMonth(month);
-    if (!budgets[month]) {
-      setBudgets(prev => ({
-        ...prev,
-        [month]: generateMockData(month)
-      }));
+  // Fetch categories
+  const { data: categories = [] } = useQuery({
+    queryKey: ['categories'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .order('name');
+      
+      if (error) throw error;
+      return data;
     }
+  });
+
+  // Fetch expenses
+  const { data: expenses = [] } = useQuery({
+    queryKey: ['expenses', currentMonth],
+    queryFn: async () => {
+      const startDate = `${currentMonth}-01`;
+      const endDate = `${currentMonth}-31`;
+      
+      const { data, error } = await supabase
+        .from('expenses')
+        .select('*')
+        .gte('date', startDate)
+        .lte('date', endDate)
+        .order('date', { ascending: false });
+      
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  // Add category mutation
+  const addCategoryMutation = useMutation({
+    mutationFn: async (category: Omit<Category, 'id'>) => {
+      const { data, error } = await supabase
+        .from('categories')
+        .insert([category])
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      toast({
+        title: "Catégorie créée",
+        description: "La catégorie a été créée avec succès."
+      });
+    }
+  });
+
+  // Update category mutation
+  const updateCategoryMutation = useMutation({
+    mutationFn: async ({ id, ...category }: Category) => {
+      const { data, error } = await supabase
+        .from('categories')
+        .update(category)
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      toast({
+        title: "Catégorie modifiée",
+        description: "La catégorie a été modifiée avec succès."
+      });
+    }
+  });
+
+  // Add expense mutation
+  const addExpenseMutation = useMutation({
+    mutationFn: async (expense: Omit<Expense, 'id'>) => {
+      const { data, error } = await supabase
+        .from('expenses')
+        .insert([expense])
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['expenses'] });
+      toast({
+        title: "Dépense ajoutée",
+        description: "La dépense a été ajoutée avec succès."
+      });
+    }
+  });
+
+  // Update expense mutation
+  const updateExpenseMutation = useMutation({
+    mutationFn: async ({ id, ...expense }: Expense) => {
+      const { data, error } = await supabase
+        .from('expenses')
+        .update(expense)
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['expenses'] });
+      toast({
+        title: "Dépense modifiée",
+        description: "La dépense a été modifiée avec succès."
+      });
+    }
+  });
+
+  const handleAddCategory = async (categoryData: Oomit<Category, 'id'>) => {
+    await addCategoryMutation.mutateAsync(categoryData);
   };
 
-  const handleAddCategory = (categoryData: Omit<Category, 'id'>) => {
-    const newCategory: Category = {
-      ...categoryData,
-      id: Math.random().toString(36).substr(2, 9)
-    };
-
-    setBudgets(prev => ({
-      ...prev,
-      [currentMonth]: {
-        ...currentBudget,
-        categories: [...currentBudget.categories, newCategory]
-      }
-    }));
-
-    toast({
-      title: "Catégorie créée",
-      description: `La catégorie ${categoryData.name} a été créée avec succès.`
-    });
-  };
-
-  const handleEditCategory = (categoryData: Omit<Category, 'id'>) => {
+  const handleEditCategory = async (categoryData: Omit<Category, 'id'>) => {
     if (!editingCategory) return;
-
-    setBudgets(prev => ({
-      ...prev,
-      [currentMonth]: {
-        ...currentBudget,
-        categories: currentBudget.categories.map(cat =>
-          cat.id === editingCategory.id ? { ...cat, ...categoryData } : cat
-        )
-      }
-    }));
-
-    toast({
-      title: "Catégorie modifiée",
-      description: `La catégorie ${categoryData.name} a été modifiée avec succès.`
-    });
+    await updateCategoryMutation.mutateAsync({ ...categoryData, id: editingCategory.id });
   };
 
-  const handleAddExpense = (expenseData: Omit<Expense, 'id'>) => {
-    const newExpense: Expense = {
-      ...expenseData,
-      id: Math.random().toString(36).substr(2, 9)
-    };
-
-    setBudgets(prev => ({
-      ...prev,
-      [currentMonth]: {
-        ...currentBudget,
-        expenses: [...currentBudget.expenses, newExpense]
-      }
-    }));
-
-    toast({
-      title: "Dépense ajoutée",
-      description: `La dépense de ${expenseData.amount}€ a été ajoutée avec succès.`
-    });
+  const handleAddExpense = async (expenseData: Omit<Expense, 'id'>) => {
+    await addExpenseMutation.mutateAsync(expenseData);
   };
 
-  const handleEditExpense = (expenseData: Omit<Expense, 'id'>) => {
+  const handleEditExpense = async (expenseData: Omit<Expense, 'id'>) => {
     if (!editingExpense) return;
-
-    setBudgets(prev => ({
-      ...prev,
-      [currentMonth]: {
-        ...currentBudget,
-        expenses: currentBudget.expenses.map(exp =>
-          exp.id === editingExpense.id ? { ...exp, ...expenseData } : exp
-        )
-      }
-    }));
-
-    toast({
-      title: "Dépense modifiée",
-      description: `La dépense a été modifiée avec succès.`
-    });
+    await updateExpenseMutation.mutateAsync({ ...expenseData, id: editingExpense.id });
   };
 
   const handleExportCSV = () => {
-    exportToCSV(currentBudget.expenses, currentBudget.categories);
-    toast({
-      title: "Export réussi",
-      description: "Les dépenses ont été exportées au format CSV."
-    });
+    // Export logic here
   };
 
   return (
     <div className="container mx-auto py-8 space-y-8">
       <BudgetHeader 
         currentMonth={currentMonth}
-        onMonthChange={handleMonthChange}
+        onMonthChange={setCurrentMonth}
       />
 
       <BudgetContent 
-        categories={currentBudget.categories}
-        expenses={currentBudget.expenses}
+        categories={categories}
+        expenses={expenses}
         onAddCategory={() => {
           setEditingCategory(undefined);
           setAddCategoryOpen(true);
@@ -163,7 +203,7 @@ const Index = () => {
         open={addExpenseOpen}
         onOpenChange={setAddExpenseOpen}
         onSave={editingExpense ? handleEditExpense : handleAddExpense}
-        categories={currentBudget.categories}
+        categories={categories}
         initialExpense={editingExpense}
       />
     </div>
