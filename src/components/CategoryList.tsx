@@ -35,6 +35,7 @@ export const CategoryList = ({
   };
 
   const getCategoryBudget = (categoryId: string) => {
+    if (!categoryId) return 0;
     return monthlyBudgets.find(mb => mb.category_id === categoryId)?.budget || 0;
   };
 

@@ -29,10 +29,12 @@ export const ExpenseList = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const getCategoryName = (categoryId: string) => {
+    if (!categoryId) return '';
     return categories.find(c => c.id === categoryId)?.name || '';
   };
 
   const getCategoryColor = (categoryId: string) => {
+    if (!categoryId) return '#000';
     return categories.find(c => c.id === categoryId)?.color || '#000';
   };
 

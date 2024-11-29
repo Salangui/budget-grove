@@ -37,7 +37,8 @@ const Index = () => {
     addCategoryMutation, 
     updateCategoryMutation,
     addExpenseMutation,
-    updateExpenseMutation 
+    updateExpenseMutation,
+    deleteExpenseMutation 
   } = useBudgetMutations();
 
   const handleAddCategory = async (category: Omit<Category, 'id'>, monthlyBudget: number) => {
@@ -74,6 +75,11 @@ const Index = () => {
     await updateExpenseMutation.mutateAsync(expense);
     setAddExpenseOpen(false);
     setEditingExpense(undefined);
+  };
+
+  const handleDeleteExpense = async (expense: Expense) => {
+    if (!expense?.id) return;
+    await deleteExpenseMutation.mutateAsync(expense);
   };
 
   const handleExportCSV = () => {
@@ -158,6 +164,7 @@ const Index = () => {
           setEditingExpense(expense);
           setAddExpenseOpen(true);
         }}
+        onDeleteExpense={handleDeleteExpense}
         onExportCSV={handleExportCSV}
         onImportCSV={handleImportCSV}
         monthlyBudgets={monthlyBudgets}
