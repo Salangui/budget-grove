@@ -9,6 +9,10 @@ import { generateMockData } from '@/utils/mockData';
 import { exportToCSV } from '@/utils/csvExport';
 import { Category, Expense, MonthlyBudget } from '@/types';
 import { useToast } from '@/components/ui/use-toast';
+import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
+import { LogOut } from 'lucide-react';
 
 const getCurrentMonth = () => {
   const date = new Date();
@@ -17,6 +21,7 @@ const getCurrentMonth = () => {
 
 const Index = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [currentMonth, setCurrentMonth] = useState(getCurrentMonth());
   const [budgets, setBudgets] = useState<Record<string, MonthlyBudget>>({
     [currentMonth]: generateMockData(currentMonth)
@@ -28,6 +33,11 @@ const Index = () => {
   const [editingExpense, setEditingExpense] = useState<Expense>();
 
   const currentBudget = budgets[currentMonth] || generateMockData(currentMonth);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate('/login');
+  };
 
   const handleMonthChange = (month: string) => {
     setCurrentMonth(month);
@@ -129,10 +139,16 @@ const Index = () => {
     <div className="container mx-auto py-8 space-y-8">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Budget Familial</h1>
-        <MonthPicker 
-          currentMonth={currentMonth}
-          onMonthChange={handleMonthChange}
-        />
+        <div className="flex items-center gap-4">
+          <MonthPicker 
+            currentMonth={currentMonth}
+            onMonthChange={handleMonthChange}
+          />
+          <Button variant="outline" onClick={handleLogout}>
+            <LogOut className="mr-2 h-4 w-4" />
+            Déconnexion
+          </Button>
+        </div>
       </div>
 
       <BudgetSummary 
