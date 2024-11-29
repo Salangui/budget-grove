@@ -184,6 +184,28 @@ const Index = () => {
     }
   });
 
+  const handleAddCategory = async (category: Omit<Category, 'id'>) => {
+    await addCategoryMutation.mutateAsync(category);
+    setAddCategoryOpen(false);
+  };
+
+  const handleEditCategory = async (category: Category) => {
+    await updateCategoryMutation.mutateAsync(category);
+    setAddCategoryOpen(false);
+    setEditingCategory(undefined);
+  };
+
+  const handleAddExpense = async (expense: Omit<Expense, 'id'>) => {
+    await addExpenseMutation.mutateAsync(expense);
+    setAddExpenseOpen(false);
+  };
+
+  const handleEditExpense = async (expense: Expense) => {
+    await updateExpenseMutation.mutateAsync(expense);
+    setAddExpenseOpen(false);
+    setEditingExpense(undefined);
+  };
+
   const handleDeleteCategory = async (category: Category) => {
     const hasExpenses = expenses.some(e => e.category_id === category.id);
     if (hasExpenses) {

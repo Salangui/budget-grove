@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Category, Expense } from '@/types';
 import { Input } from './ui/input';
 import { useToast } from './ui/use-toast';
+import { useRef } from 'react';
 
 interface ExpenseListProps {
   expenses: Expense[];
@@ -25,7 +26,7 @@ export const ExpenseList = ({
   onImportCSV
 }: ExpenseListProps) => {
   const { toast } = useToast();
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const getCategoryName = (categoryId: string) => {
     return categories.find(c => c.id === categoryId)?.name || '';
