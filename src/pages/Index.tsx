@@ -29,6 +29,34 @@ const Index = () => {
   const [addExpenseOpen, setAddExpenseOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense>();
 
+  // Ensure profile exists
+  const { data: profile } = useQuery({
+    queryKey: ['profile'],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+      
+      if (error) {
+        // If profile doesn't exist, create it
+        const { data: newProfile, error: createError } = await supabase
+          .from('profiles')
+          .insert([{ id: user.id }])
+          .select()
+          .single();
+          
+        if (createError) throw createError;
+        return newProfile;
+      }
+      
+      return data;
+    },
+    enabled: !!user
+  });
+
   // Fetch categories
   const { data: categories = [] } = useQuery({
     queryKey: ['categories'],
@@ -41,10 +69,9 @@ const Index = () => {
       if (error) throw error;
       return data;
     },
-    enabled: !!user
+    enabled: !!user && !!profile
   });
 
-  // Fetch expenses
   const { data: expenses = [] } = useQuery({
     queryKey: ['expenses', currentMonth],
     queryFn: async () => {
@@ -86,7 +113,6 @@ const Index = () => {
     }
   });
 
-  // Update category mutation
   const updateCategoryMutation = useMutation({
     mutationFn: async ({ id, ...category }: Category) => {
       const { data, error } = await supabase
@@ -152,6 +178,14 @@ const Index = () => {
   });
 
   const handleAddCategory = async (categoryData: Omit<Category, 'id' | 'user_id' | 'created_at'>) => {
+    if (!profile) {
+      toast({
+        title: "Erreur",
+        description: "Votre profil n'est pas encore créé. Veuillez réessayer.",
+        variant: "destructive"
+      });
+      return;
+    }
     await addCategoryMutation.mutateAsync(categoryData);
   };
 
