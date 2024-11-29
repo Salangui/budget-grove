@@ -28,13 +28,13 @@ export const CategoryList = ({
   onDeleteCategory,
   monthlyBudgets
 }: CategoryListProps) => {
-  const getCategoryExpenses = (categoryId: string) => {
+  const getCategoryExpenses = (categoryId: string | undefined) => {
     if (!categoryId) return 0;
     return expenses.filter(e => e.category_id === categoryId)
       .reduce((sum, exp) => sum + exp.amount, 0);
   };
 
-  const getCategoryBudget = (categoryId: string) => {
+  const getCategoryBudget = (categoryId: string | undefined) => {
     if (!categoryId) return 0;
     return monthlyBudgets.find(mb => mb.category_id === categoryId)?.budget || 0;
   };
@@ -51,6 +51,9 @@ export const CategoryList = ({
     onDeleteCategory(category);
   };
 
+  // Filter out categories without IDs to prevent invalid database queries
+  const validCategories = categories.filter(category => category?.id);
+
   return (
     <div>
       <div className="flex justify-between items-center mb-4">
@@ -62,7 +65,7 @@ export const CategoryList = ({
                 <SelectValue placeholder="Modifier une catégorie" />
               </SelectTrigger>
               <SelectContent>
-                {categories.filter(category => category?.id).map(category => (
+                {validCategories.map(category => (
                   <SelectItem key={category.id} value={category.id}>
                     <div className="flex items-center gap-2">
                       <div 
@@ -83,7 +86,7 @@ export const CategoryList = ({
         </div>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-        {categories.filter(category => category?.id).map(category => {
+        {validCategories.map(category => {
           const spent = getCategoryExpenses(category.id);
           const budget = getCategoryBudget(category.id);
           const progress = (spent / budget) * 100;
