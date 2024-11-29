@@ -39,13 +39,11 @@ export const CategoryList = ({
     return monthlyBudgets.find(mb => mb.category_id === categoryId)?.budget || 0;
   };
 
-  const handleEditCategory = (categoryId: string | undefined) => {
-    if (!categoryId) return;
-    
+  const handleEditCategory = (categoryId: string) => {
     const category = categories.find(c => c.id === categoryId);
-    if (!category) return;
-    
-    onEditCategory(category);
+    if (category) {
+      onEditCategory(category);
+    }
   };
 
   const handleDeleteCategory = (category: Category | undefined) => {
@@ -54,7 +52,11 @@ export const CategoryList = ({
   };
 
   // Filter out invalid categories
-  const validCategories = categories.filter(category => category && typeof category.id === 'string' && category.id.length > 0);
+  const validCategories = categories.filter(category => 
+    category && 
+    typeof category.id === 'string' && 
+    category.id.length > 0
+  );
 
   return (
     <div>
@@ -62,11 +64,7 @@ export const CategoryList = ({
         <h2 className="text-2xl font-bold">Catégories</h2>
         <div className="flex gap-2">
           <div className="w-64">
-            <Select 
-              onValueChange={(value) => {
-                if (value) handleEditCategory(value);
-              }}
-            >
+            <Select onValueChange={handleEditCategory}>
               <SelectTrigger>
                 <SelectValue placeholder="Modifier une catégorie" />
               </SelectTrigger>
