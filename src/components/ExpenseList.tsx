@@ -44,7 +44,19 @@ export const ExpenseList = ({
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (file.type !== 'text/csv') {
+    // Accepter plus de types MIME pour les fichiers CSV
+    const validTypes = [
+      'text/csv',
+      'application/csv',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      ''  // Pour les fichiers sans type MIME
+    ];
+
+    // Vérifier aussi l'extension du fichier
+    const isCSVExtension = file.name.toLowerCase().endsWith('.csv');
+
+    if (!validTypes.includes(file.type) && !isCSVExtension) {
       toast({
         title: "Erreur",
         description: "Le fichier doit être au format CSV",
