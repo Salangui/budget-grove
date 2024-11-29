@@ -34,30 +34,43 @@ const Index = () => {
     queryKey: ['profile'],
     queryFn: async () => {
       if (!user) return null;
-      const { data, error } = await supabase
+      
+      // First try to get the profile
+      const { data: existingProfile, error: fetchError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
       
-      if (error) {
-        // If profile doesn't exist, create it
+      if (existingProfile) return existingProfile;
+      
+      // If profile doesn't exist and there was no other error, create it
+      if (!existingProfile && !fetchError) {
         const { data: newProfile, error: createError } = await supabase
           .from('profiles')
           .insert([{ id: user.id }])
           .select()
           .single();
-          
-        if (createError) throw createError;
+        
+        if (createError) {
+          toast({
+            title: "Erreur",
+            description: "Impossible de créer votre profil. Veuillez réessayer.",
+            variant: "destructive"
+          });
+          throw createError;
+        }
+        
         return newProfile;
       }
       
-      return data;
+      if (fetchError) throw fetchError;
+      return null;
     },
-    enabled: !!user
+    enabled: !!user,
+    retry: false
   });
 
-  // Fetch categories
   const { data: categories = [] } = useQuery({
     queryKey: ['categories'],
     queryFn: async () => {
@@ -92,7 +105,6 @@ const Index = () => {
     enabled: !!user
   });
 
-  // Add category mutation
   const addCategoryMutation = useMutation({
     mutationFn: async (category: Omit<Category, 'id' | 'user_id' | 'created_at'>) => {
       const { data, error } = await supabase
