@@ -95,10 +95,30 @@ export const useBudgetMutations = () => {
     }
   });
 
+  const deleteExpenseMutation = useMutation({
+    mutationFn: async (expense: Expense) => {
+      const { error } = await supabase
+        .from('expenses')
+        .delete()
+        .eq('id', expense.id);
+      
+      if (error) throw error;
+      return expense;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['expenses'] });
+      toast({
+        title: "Dépense supprimée",
+        description: "La dépense a été supprimée avec succès."
+      });
+    }
+  });
+
   return {
     addCategoryMutation,
     updateCategoryMutation,
     addExpenseMutation,
-    updateExpenseMutation
+    updateExpenseMutation,
+    deleteExpenseMutation
   };
 };
