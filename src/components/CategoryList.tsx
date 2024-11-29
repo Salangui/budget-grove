@@ -39,13 +39,14 @@ export const CategoryList = ({
     return monthlyBudgets.find(mb => mb.category_id === categoryId)?.budget || 0;
   };
 
-  const handleEditCategory = (categoryId: string) => {
+  const handleEditCategory = (categoryId: string | undefined) => {
+    if (!categoryId) return;
     const category = categories.find(c => c.id === categoryId);
-    if (!category?.id) return;
+    if (!category) return;
     onEditCategory(category);
   };
 
-  const handleDeleteCategory = (category: Category) => {
+  const handleDeleteCategory = (category: Category | undefined) => {
     if (!category?.id || !onDeleteCategory) return;
     onDeleteCategory(category);
   };
@@ -61,7 +62,7 @@ export const CategoryList = ({
                 <SelectValue placeholder="Modifier une catégorie" />
               </SelectTrigger>
               <SelectContent>
-                {categories.map(category => (
+                {categories.filter(category => category?.id).map(category => (
                   <SelectItem key={category.id} value={category.id}>
                     <div className="flex items-center gap-2">
                       <div 
@@ -82,8 +83,7 @@ export const CategoryList = ({
         </div>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-        {categories.map(category => {
-          if (!category?.id) return null;
+        {categories.filter(category => category?.id).map(category => {
           const spent = getCategoryExpenses(category.id);
           const budget = getCategoryBudget(category.id);
           const progress = (spent / budget) * 100;
