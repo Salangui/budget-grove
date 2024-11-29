@@ -6,6 +6,7 @@ export interface Category {
   user_id: string;
   created_at?: string;
   is_fake?: boolean;
+  is_hidden?: boolean;
 }
 
 export interface Expense {
