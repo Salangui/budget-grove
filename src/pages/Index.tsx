@@ -201,6 +201,7 @@ const Index = () => {
         onSave={editingExpense ? handleEditExpense : handleAddExpense}
         categories={categories}
         initialExpense={editingExpense}
+        currentMonth={currentMonth}
       />
     </div>
   );

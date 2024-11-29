@@ -2,6 +2,7 @@ import { Plus, Trash2 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Category, Expense } from '@/types';
+import { cn } from '@/lib/utils';
 
 interface CategoryListProps {
   categories: Category[];
@@ -36,11 +37,15 @@ export const CategoryList = ({
         {categories.map(category => {
           const spent = getCategoryExpenses(category.id);
           const progress = (spent / category.budget) * 100;
+          const isOverBudget = spent > category.budget;
           
           return (
             <Card 
               key={category.id}
-              className="p-4 hover:shadow-lg transition-shadow"
+              className={cn(
+                "p-4 hover:shadow-lg transition-shadow",
+                isOverBudget && "border-red-500"
+              )}
             >
               <div className="flex justify-between items-center mb-2">
                 <div 
@@ -67,22 +72,34 @@ export const CategoryList = ({
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Budget:</span>
-                  <span className="font-medium">{category.budget}€</span>
+                  <span className={cn(
+                    "font-medium",
+                    isOverBudget && "text-red-500"
+                  )}>{category.budget}€</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Dépensé:</span>
-                  <span className="font-medium">{spent}€</span>
+                  <span className={cn(
+                    "font-medium",
+                    isOverBudget && "text-red-500"
+                  )}>{spent}€</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Restant:</span>
-                  <span className="font-medium">{category.budget - spent}€</span>
+                  <span className={cn(
+                    "font-medium",
+                    isOverBudget && "text-red-500"
+                  )}>{category.budget - spent}€</span>
                 </div>
                 <div className="relative h-2 bg-gray-200 rounded">
                   <div 
-                    className="absolute h-full rounded"
+                    className={cn(
+                      "absolute h-full rounded",
+                      isOverBudget ? "bg-red-500" : ""
+                    )}
                     style={{ 
                       width: `${Math.min(progress, 100)}%`,
-                      backgroundColor: category.color
+                      backgroundColor: isOverBudget ? undefined : category.color
                     }}
                   />
                 </div>
