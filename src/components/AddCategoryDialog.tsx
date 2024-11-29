@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Category } from '@/types';
+import { useAuth } from '@/hooks/useAuth';
 
 interface AddCategoryDialogProps {
   open: boolean;
@@ -18,17 +19,20 @@ export const AddCategoryDialog = ({
   onSave,
   initialCategory 
 }: AddCategoryDialogProps) => {
+  const { user } = useAuth();
   const [name, setName] = useState(initialCategory?.name || '');
   const [budget, setBudget] = useState(initialCategory?.budget.toString() || '');
   const [color, setColor] = useState(initialCategory?.color || '#0EA5E9');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) return;
+    
     onSave({
       name,
       budget: Number(budget),
       color,
-      user_id: initialCategory?.user_id || ''
+      user_id: user.id
     });
     onOpenChange(false);
   };
