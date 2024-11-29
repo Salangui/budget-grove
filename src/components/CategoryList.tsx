@@ -1,8 +1,15 @@
-import { Plus, Trash2, Eye, EyeOff } from 'lucide-react';
+import { Plus, Trash2, Eye, EyeOff, Edit } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Category, Expense } from '@/types';
 import { cn } from '@/lib/utils';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface CategoryListProps {
   categories: Category[];
@@ -31,7 +38,8 @@ export const CategoryList = ({
     return monthlyBudgets.find(mb => mb.category_id === categoryId)?.budget || 0;
   };
 
-  const handleEditCategory = (category: Category) => {
+  const handleEditCategory = (categoryId: string) => {
+    const category = categories.find(c => c.id === categoryId);
     if (!category?.id) return;
     onEditCategory(category);
   };
@@ -45,10 +53,32 @@ export const CategoryList = ({
     <div>
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-2xl font-bold">Catégories</h2>
-        <Button onClick={onAddCategory}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nouvelle catégorie
-        </Button>
+        <div className="flex gap-2">
+          <div className="w-64">
+            <Select onValueChange={handleEditCategory}>
+              <SelectTrigger>
+                <SelectValue placeholder="Modifier une catégorie" />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map(category => (
+                  <SelectItem key={category.id} value={category.id}>
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="w-3 h-3 rounded-full" 
+                        style={{ backgroundColor: category.color }}
+                      />
+                      {category.name}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <Button onClick={onAddCategory}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nouvelle catégorie
+          </Button>
+        </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {categories.map(category => {
@@ -68,22 +98,17 @@ export const CategoryList = ({
               )}
             >
               <div className="flex justify-between items-center mb-2">
-                <div 
-                  className="flex-1 cursor-pointer"
-                  onClick={() => handleEditCategory(category)}
-                >
-                  <div className="flex items-center space-x-2">
-                    <h3 className="font-semibold">{category.name}</h3>
-                    <div 
-                      className="w-3 h-3 rounded-full" 
-                      style={{ backgroundColor: category.color }}
-                    />
-                    {category.is_hidden ? (
-                      <EyeOff className="h-4 w-4 text-gray-400" />
-                    ) : (
-                      <Eye className="h-4 w-4 text-gray-400" />
-                    )}
-                  </div>
+                <div className="flex items-center space-x-2">
+                  <h3 className="font-semibold">{category.name}</h3>
+                  <div 
+                    className="w-3 h-3 rounded-full" 
+                    style={{ backgroundColor: category.color }}
+                  />
+                  {category.is_hidden ? (
+                    <EyeOff className="h-4 w-4 text-gray-400" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-gray-400" />
+                  )}
                 </div>
                 {onDeleteCategory && (
                   <Button

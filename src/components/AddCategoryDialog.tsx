@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -30,6 +30,17 @@ export const AddCategoryDialog = ({
   const [color, setColor] = useState(initialCategory?.color || '#0EA5E9');
   const [isHidden, setIsHidden] = useState(initialCategory?.is_hidden || false);
 
+  useEffect(() => {
+    if (initialCategory) {
+      setName(initialCategory.name);
+      setColor(initialCategory.color);
+      setIsHidden(initialCategory.is_hidden || false);
+    }
+    if (currentMonthBudget !== undefined) {
+      setBudget(currentMonthBudget.toString());
+    }
+  }, [initialCategory, currentMonthBudget]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!user?.id) {
@@ -48,6 +59,14 @@ export const AddCategoryDialog = ({
       user_id: user.id,
       is_hidden: isHidden
     }, Number(budget));
+    
+    // Reset form
+    if (!initialCategory) {
+      setName('');
+      setBudget('0');
+      setColor('#0EA5E9');
+      setIsHidden(false);
+    }
     onOpenChange(false);
   };
 
