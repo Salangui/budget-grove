@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { Category } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/ui/use-toast';
@@ -10,21 +11,24 @@ import { useToast } from '@/components/ui/use-toast';
 interface AddCategoryDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: (category: Omit<Category, 'id'>) => void;
+  onSave: (category: Omit<Category, 'id'>, monthlyBudget: number) => void;
   initialCategory?: Category;
+  currentMonthBudget?: number;
 }
 
 export const AddCategoryDialog = ({ 
   open, 
   onOpenChange, 
   onSave,
-  initialCategory 
+  initialCategory,
+  currentMonthBudget
 }: AddCategoryDialogProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [name, setName] = useState(initialCategory?.name || '');
-  const [budget, setBudget] = useState(initialCategory?.budget.toString() || '');
+  const [budget, setBudget] = useState(currentMonthBudget?.toString() || '0');
   const [color, setColor] = useState(initialCategory?.color || '#0EA5E9');
+  const [isHidden, setIsHidden] = useState(initialCategory?.is_hidden || false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,10 +43,11 @@ export const AddCategoryDialog = ({
     
     onSave({
       name,
-      budget: Number(budget),
+      budget: 0, // This will be replaced by monthly budgets
       color,
-      user_id: user.id
-    });
+      user_id: user.id,
+      is_hidden: isHidden
+    }, Number(budget));
     onOpenChange(false);
   };
 
@@ -84,6 +89,14 @@ export const AddCategoryDialog = ({
               onChange={e => setColor(e.target.value)}
               required
             />
+          </div>
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="hidden"
+              checked={isHidden}
+              onCheckedChange={setIsHidden}
+            />
+            <Label htmlFor="hidden">Masquer la catégorie</Label>
           </div>
           <div className="flex justify-end space-x-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

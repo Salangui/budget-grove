@@ -3,6 +3,7 @@ import { AddCategoryDialog } from '@/components/AddCategoryDialog';
 import { AddExpenseDialog } from '@/components/AddExpenseDialog';
 import { BudgetHeader } from '@/components/budget/BudgetHeader';
 import { BudgetContent } from '@/components/budget/BudgetContent';
+import { QuickExpenseForm } from '@/components/QuickExpenseForm';
 import { Category, Expense } from '@/types';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,6 +12,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useBudgetData } from '@/hooks/useBudgetData';
 import { useBudgetMutations } from '@/hooks/useBudgetMutations';
+import { useMonthlyBudgets } from '@/hooks/useMonthlyBudgets';
 import { exportToCSV, parseCSV } from '@/utils/csvExport';
 
 const getCurrentMonth = () => {
@@ -30,6 +32,7 @@ const Index = () => {
   const [editingExpense, setEditingExpense] = useState<Expense>();
 
   const { categories, expenses } = useBudgetData(currentMonth);
+  const { monthlyBudgets, addMonthlyBudget } = useMonthlyBudgets(currentMonth);
   const { 
     addCategoryMutation, 
     updateCategoryMutation,
@@ -37,71 +40,27 @@ const Index = () => {
     updateExpenseMutation 
   } = useBudgetMutations();
 
-  const deleteCategoryMutation = useMutation({
-    mutationFn: async (category: Category) => {
-      const { error } = await supabase
-        .from('categories')
-        .delete()
-        .eq('id', category.id);
-      
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['categories'] });
-      toast({
-        title: "Catégorie supprimée",
-        description: "La catégorie a été supprimée avec succès."
+  const handleAddCategory = async (category: Omit<Category, 'id'>, monthlyBudget: number) => {
+    const newCategory = await addCategoryMutation.mutateAsync(category);
+    if (newCategory && user) {
+      await addMonthlyBudget({
+        category_id: newCategory.id,
+        budget: monthlyBudget,
+        user_id: user.id
       });
     }
-  });
-
-  const deleteExpenseMutation = useMutation({
-    mutationFn: async (expense: Expense) => {
-      const { error } = await supabase
-        .from('expenses')
-        .delete()
-        .eq('id', expense.id);
-      
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['expenses'] });
-      toast({
-        title: "Dépense supprimée",
-        description: "La dépense a été supprimée avec succès."
-      });
-    }
-  });
-
-  const importExpensesMutation = useMutation({
-    mutationFn: async (expenses: Omit<Expense, 'id' | 'created_at'>[]) => {
-      if (!user) throw new Error('User not authenticated');
-      
-      const { error } = await supabase
-        .from('expenses')
-        .insert(expenses.map(expense => ({
-          ...expense,
-          user_id: user.id
-        })));
-      
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['expenses'] });
-      toast({
-        title: "Import réussi",
-        description: "Les dépenses ont été importées avec succès."
-      });
-    }
-  });
-
-  const handleAddCategory = async (category: Omit<Category, 'id'>) => {
-    await addCategoryMutation.mutateAsync(category);
     setAddCategoryOpen(false);
   };
 
-  const handleEditCategory = async (category: Category) => {
+  const handleEditCategory = async (category: Category, monthlyBudget: number) => {
     await updateCategoryMutation.mutateAsync(category);
+    if (user) {
+      await addMonthlyBudget({
+        category_id: category.id,
+        budget: monthlyBudget,
+        user_id: user.id
+      });
+    }
     setAddCategoryOpen(false);
     setEditingCategory(undefined);
   };
@@ -117,36 +76,43 @@ const Index = () => {
     setEditingExpense(undefined);
   };
 
-  const handleDeleteCategory = async (category: Category) => {
-    const hasExpenses = expenses.some(e => e.category_id === category.id);
-    if (hasExpenses) {
-      toast({
-        title: "Action impossible",
-        description: "Vous devez d'abord supprimer ou déplacer les dépenses de cette catégorie.",
-        variant: "destructive"
-      });
-      return;
-    }
-    await deleteCategoryMutation.mutateAsync(category);
-  };
-
-  const handleDeleteExpense = async (expense: Expense) => {
-    await deleteExpenseMutation.mutateAsync(expense);
-  };
-
   const handleExportCSV = () => {
-    exportToCSV(expenses, categories);
+    exportToCSV(expenses, categories, monthlyBudgets);
   };
 
   const handleImportCSV = async (file: File) => {
     try {
       if (!user) throw new Error('User not authenticated');
-      const parsedExpenses = await parseCSV(file, categories);
-      const expensesWithUserId = parsedExpenses.map(expense => ({
-        ...expense,
-        user_id: user.id
-      }));
-      await importExpensesMutation.mutateAsync(expensesWithUserId);
+      const { expenses: parsedExpenses, categories: parsedCategories } = await parseCSV(file, categories);
+      
+      // Import categories first
+      for (const category of parsedCategories) {
+        const newCategory = await addCategoryMutation.mutateAsync({
+          ...category,
+          user_id: user.id
+        });
+        
+        if (newCategory) {
+          await addMonthlyBudget({
+            category_id: newCategory.id,
+            budget: category.budget,
+            user_id: user.id
+          });
+        }
+      }
+      
+      // Then import expenses
+      for (const expense of parsedExpenses) {
+        await addExpenseMutation.mutateAsync({
+          ...expense,
+          user_id: user.id
+        });
+      }
+      
+      toast({
+        title: "Import réussi",
+        description: "Les données ont été importées avec succès."
+      });
     } catch (error) {
       toast({
         title: "Erreur",
@@ -156,11 +122,21 @@ const Index = () => {
     }
   };
 
+  const getCurrentBudget = (categoryId: string) => {
+    return monthlyBudgets.find(mb => mb.category_id === categoryId)?.budget || 0;
+  };
+
   return (
     <div className="container mx-auto py-8 space-y-8">
       <BudgetHeader 
         currentMonth={currentMonth}
         onMonthChange={setCurrentMonth}
+      />
+
+      <QuickExpenseForm
+        categories={categories}
+        onSave={handleAddExpense}
+        currentMonth={currentMonth}
       />
 
       <BudgetContent 
@@ -174,7 +150,6 @@ const Index = () => {
           setEditingCategory(category);
           setAddCategoryOpen(true);
         }}
-        onDeleteCategory={handleDeleteCategory}
         onAddExpense={() => {
           setEditingExpense(undefined);
           setAddExpenseOpen(true);
@@ -183,9 +158,9 @@ const Index = () => {
           setEditingExpense(expense);
           setAddExpenseOpen(true);
         }}
-        onDeleteExpense={handleDeleteExpense}
         onExportCSV={handleExportCSV}
         onImportCSV={handleImportCSV}
+        monthlyBudgets={monthlyBudgets}
       />
 
       <AddCategoryDialog 
@@ -193,6 +168,7 @@ const Index = () => {
         onOpenChange={setAddCategoryOpen}
         onSave={editingCategory ? handleEditCategory : handleAddCategory}
         initialCategory={editingCategory}
+        currentMonthBudget={editingCategory ? getCurrentBudget(editingCategory.id) : undefined}
       />
 
       <AddExpenseDialog 

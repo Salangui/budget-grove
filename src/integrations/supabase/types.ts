@@ -16,6 +16,7 @@ export type Database = {
           created_at: string
           id: string
           is_fake: boolean | null
+          is_hidden: boolean | null
           name: string
           user_id: string
         }
@@ -25,6 +26,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_fake?: boolean | null
+          is_hidden?: boolean | null
           name: string
           user_id: string
         }
@@ -34,6 +36,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_fake?: boolean | null
+          is_hidden?: boolean | null
           name?: string
           user_id?: string
         }
@@ -88,6 +91,48 @@ export type Database = {
           },
           {
             foreignKeyName: "expenses_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      monthly_budgets: {
+        Row: {
+          budget: number
+          category_id: string
+          created_at: string
+          id: string
+          month: string
+          user_id: string
+        }
+        Insert: {
+          budget: number
+          category_id: string
+          created_at?: string
+          id?: string
+          month: string
+          user_id: string
+        }
+        Update: {
+          budget?: number
+          category_id?: string
+          created_at?: string
+          id?: string
+          month?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monthly_budgets_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_budgets_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"

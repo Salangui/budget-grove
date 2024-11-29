@@ -8,12 +8,13 @@ interface BudgetContentProps {
   expenses: Expense[];
   onAddCategory: () => void;
   onEditCategory: (category: Category) => void;
-  onDeleteCategory: (category: Category) => void;
+  onDeleteCategory?: (category: Category) => void;
   onAddExpense: () => void;
   onEditExpense: (expense: Expense) => void;
-  onDeleteExpense: (expense: Expense) => void;
+  onDeleteExpense?: (expense: Expense) => void;
   onExportCSV: () => void;
   onImportCSV: (file: File) => void;
+  monthlyBudgets: any[];
 }
 
 export const BudgetContent = ({
@@ -26,13 +27,28 @@ export const BudgetContent = ({
   onEditExpense,
   onDeleteExpense,
   onExportCSV,
-  onImportCSV
+  onImportCSV,
+  monthlyBudgets
 }: BudgetContentProps) => {
+  const visibleCategories = categories.filter(c => !c.is_hidden);
+  const visibleExpenses = expenses.filter(e => 
+    visibleCategories.some(c => c.id === e.category_id)
+  );
+
+  const getCategoryBudget = (categoryId: string) => {
+    return monthlyBudgets.find(mb => mb.category_id === categoryId)?.budget || 0;
+  };
+
+  const categoriesWithBudgets = visibleCategories.map(category => ({
+    ...category,
+    budget: getCategoryBudget(category.id)
+  }));
+
   return (
-    <>
+    <div className="space-y-8">
       <BudgetSummary 
-        categories={categories}
-        expenses={expenses}
+        categories={categoriesWithBudgets}
+        expenses={visibleExpenses}
       />
 
       <CategoryList 
@@ -41,17 +57,18 @@ export const BudgetContent = ({
         onAddCategory={onAddCategory}
         onEditCategory={onEditCategory}
         onDeleteCategory={onDeleteCategory}
+        monthlyBudgets={monthlyBudgets}
       />
 
       <ExpenseList 
-        categories={categories}
-        expenses={expenses}
+        categories={visibleCategories}
+        expenses={visibleExpenses}
         onAddExpense={onAddExpense}
         onEditExpense={onEditExpense}
         onDeleteExpense={onDeleteExpense}
         onExportCSV={onExportCSV}
         onImportCSV={onImportCSV}
       />
-    </>
+    </div>
   );
 };
