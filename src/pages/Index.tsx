@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { AddCategoryDialog } from '@/components/AddCategoryDialog';
 import { AddExpenseDialog } from '@/components/AddExpenseDialog';
 import { BudgetHeader } from '@/components/budget/BudgetHeader';
@@ -6,104 +6,28 @@ import { BudgetContent } from '@/components/budget/BudgetContent';
 import { Category, Expense } from '@/types';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
+import { useProfile } from '@/hooks/useProfile';
+import { useBudgetData } from '@/hooks/useBudgetData';
 
 const getCurrentMonth = () => {
   const date = new Date();
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 };
 
-const getDaysInMonth = (yearMonth: string) => {
-  const [year, month] = yearMonth.split('-').map(Number);
-  return new Date(year, month, 0).getDate();
-};
-
 const Index = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { data: profile } = useProfile();
   const [currentMonth, setCurrentMonth] = useState(getCurrentMonth());
   const [addCategoryOpen, setAddCategoryOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category>();
   const [addExpenseOpen, setAddExpenseOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense>();
 
-  // Ensure profile exists
-  const { data: profile } = useQuery({
-    queryKey: ['profile'],
-    queryFn: async () => {
-      if (!user) return null;
-      
-      // First try to get the profile
-      const { data: existingProfile, error: fetchError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .maybeSingle();
-      
-      if (existingProfile) return existingProfile;
-      
-      // If profile doesn't exist and there was no other error, create it
-      if (!existingProfile && !fetchError) {
-        const { data: newProfile, error: createError } = await supabase
-          .from('profiles')
-          .insert([{ id: user.id }])
-          .select()
-          .single();
-        
-        if (createError) {
-          toast({
-            title: "Erreur",
-            description: "Impossible de créer votre profil. Veuillez réessayer.",
-            variant: "destructive"
-          });
-          throw createError;
-        }
-        
-        return newProfile;
-      }
-      
-      if (fetchError) throw fetchError;
-      return null;
-    },
-    enabled: !!user,
-    retry: false
-  });
-
-  const { data: categories = [] } = useQuery({
-    queryKey: ['categories'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('categories')
-        .select('*')
-        .order('name');
-      
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user && !!profile
-  });
-
-  const { data: expenses = [] } = useQuery({
-    queryKey: ['expenses', currentMonth],
-    queryFn: async () => {
-      const startDate = `${currentMonth}-01`;
-      const lastDay = getDaysInMonth(currentMonth);
-      const endDate = `${currentMonth}-${lastDay}`;
-      
-      const { data, error } = await supabase
-        .from('expenses')
-        .select('*')
-        .gte('date', startDate)
-        .lte('date', endDate)
-        .order('date', { ascending: false });
-      
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user
-  });
+  const { categories, expenses } = useBudgetData(currentMonth);
 
   const addCategoryMutation = useMutation({
     mutationFn: async (category: Omit<Category, 'id' | 'user_id' | 'created_at'>) => {
@@ -146,7 +70,6 @@ const Index = () => {
     }
   });
 
-  // Add expense mutation
   const addExpenseMutation = useMutation({
     mutationFn: async (expense: Omit<Expense, 'id' | 'user_id' | 'created_at'>) => {
       const { data, error } = await supabase
@@ -167,7 +90,6 @@ const Index = () => {
     }
   });
 
-  // Update expense mutation
   const updateExpenseMutation = useMutation({
     mutationFn: async ({ id, ...expense }: Expense) => {
       const { data, error } = await supabase
