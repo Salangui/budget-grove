@@ -140,8 +140,13 @@ const Index = () => {
 
   const handleImportCSV = async (file: File) => {
     try {
+      if (!user) throw new Error('User not authenticated');
       const parsedExpenses = await parseCSV(file, categories);
-      await importExpensesMutation.mutateAsync(parsedExpenses);
+      const expensesWithUserId = parsedExpenses.map(expense => ({
+        ...expense,
+        user_id: user.id
+      }));
+      await importExpensesMutation.mutateAsync(expensesWithUserId);
     } catch (error) {
       toast({
         title: "Erreur",
