@@ -10,6 +10,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useBudgetData } from '@/hooks/useBudgetData';
+import { useBudgetMutations } from '@/hooks/useBudgetMutations';
 import { exportToCSV, parseCSV } from '@/utils/csvExport';
 
 const getCurrentMonth = () => {
@@ -29,88 +30,12 @@ const Index = () => {
   const [editingExpense, setEditingExpense] = useState<Expense>();
 
   const { categories, expenses } = useBudgetData(currentMonth);
-
-  const addCategoryMutation = useMutation({
-    mutationFn: async (category: Omit<Category, 'id' | 'user_id' | 'created_at'>) => {
-      const { data, error } = await supabase
-        .from('categories')
-        .insert([{ ...category, user_id: user?.id }])
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['categories'] });
-      toast({
-        title: "Catégorie créée",
-        description: "La catégorie a été créée avec succès."
-      });
-    }
-  });
-
-  const updateCategoryMutation = useMutation({
-    mutationFn: async ({ id, ...category }: Category) => {
-      const { data, error } = await supabase
-        .from('categories')
-        .update(category)
-        .eq('id', id)
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['categories'] });
-      toast({
-        title: "Catégorie modifiée",
-        description: "La catégorie a été modifiée avec succès."
-      });
-    }
-  });
-
-  const addExpenseMutation = useMutation({
-    mutationFn: async (expense: Omit<Expense, 'id' | 'user_id' | 'created_at'>) => {
-      const { data, error } = await supabase
-        .from('expenses')
-        .insert([{ ...expense, user_id: user?.id }])
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['expenses'] });
-      toast({
-        title: "Dépense ajoutée",
-        description: "La dépense a été ajoutée avec succès."
-      });
-    }
-  });
-
-  const updateExpenseMutation = useMutation({
-    mutationFn: async ({ id, ...expense }: Expense) => {
-      const { data, error } = await supabase
-        .from('expenses')
-        .update(expense)
-        .eq('id', id)
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['expenses'] });
-      toast({
-        title: "Dépense modifiée",
-        description: "La dépense a été modifiée avec succès."
-      });
-    }
-  });
+  const { 
+    addCategoryMutation, 
+    updateCategoryMutation,
+    addExpenseMutation,
+    updateExpenseMutation 
+  } = useBudgetMutations();
 
   const deleteCategoryMutation = useMutation({
     mutationFn: async (category: Category) => {
@@ -126,13 +51,6 @@ const Index = () => {
       toast({
         title: "Catégorie supprimée",
         description: "La catégorie a été supprimée avec succès."
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Erreur",
-        description: "Impossible de supprimer la catégorie car elle contient des dépenses.",
-        variant: "destructive"
       });
     }
   });
@@ -156,7 +74,7 @@ const Index = () => {
   });
 
   const importExpensesMutation = useMutation({
-    mutationFn: async (expenses: Omit<Expense, 'id' | 'user_id' | 'created_at'>[]) => {
+    mutationFn: async (expenses: Omit<Expense, 'id' | 'created_at'>[]) => {
       if (!user) throw new Error('User not authenticated');
       
       const { error } = await supabase
@@ -173,13 +91,6 @@ const Index = () => {
       toast({
         title: "Import réussi",
         description: "Les dépenses ont été importées avec succès."
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Erreur",
-        description: "Une erreur est survenue lors de l'import.",
-        variant: "destructive"
       });
     }
   });

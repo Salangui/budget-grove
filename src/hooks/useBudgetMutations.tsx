@@ -2,16 +2,20 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Category, Expense } from "@/types";
 import { useToast } from "@/components/ui/use-toast";
+import { useAuth } from "./useAuth";
 
 export const useBudgetMutations = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const addCategoryMutation = useMutation({
-    mutationFn: async (category: Omit<Category, 'id' | 'user_id' | 'created_at'>) => {
+    mutationFn: async (category: Omit<Category, 'id' | 'created_at'>) => {
+      if (!user) throw new Error('User not authenticated');
+      
       const { data, error } = await supabase
         .from('categories')
-        .insert([category])
+        .insert([{ ...category, user_id: user.id }])
         .select()
         .single();
       
@@ -49,10 +53,12 @@ export const useBudgetMutations = () => {
   });
 
   const addExpenseMutation = useMutation({
-    mutationFn: async (expense: Omit<Expense, 'id' | 'user_id' | 'created_at'>) => {
+    mutationFn: async (expense: Omit<Expense, 'id' | 'created_at'>) => {
+      if (!user) throw new Error('User not authenticated');
+      
       const { data, error } = await supabase
         .from('expenses')
-        .insert([expense])
+        .insert([{ ...expense, user_id: user.id }])
         .select()
         .single();
       
