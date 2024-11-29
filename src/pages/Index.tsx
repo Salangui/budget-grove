@@ -10,6 +10,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useBudgetData } from '@/hooks/useBudgetData';
+import { exportToCSV, parseCSV } from '@/utils/csvExport';
 
 const getCurrentMonth = () => {
   const date = new Date();
@@ -111,34 +112,110 @@ const Index = () => {
     }
   });
 
-  const handleAddCategory = async (categoryData: Omit<Category, 'id' | 'user_id' | 'created_at'>) => {
-    if (!profile) {
+  const deleteCategoryMutation = useMutation({
+    mutationFn: async (category: Category) => {
+      const { error } = await supabase
+        .from('categories')
+        .delete()
+        .eq('id', category.id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      toast({
+        title: "Catégorie supprimée",
+        description: "La catégorie a été supprimée avec succès."
+      });
+    },
+    onError: (error) => {
       toast({
         title: "Erreur",
-        description: "Votre profil n'est pas encore créé. Veuillez réessayer.",
+        description: "Impossible de supprimer la catégorie car elle contient des dépenses.",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const deleteExpenseMutation = useMutation({
+    mutationFn: async (expense: Expense) => {
+      const { error } = await supabase
+        .from('expenses')
+        .delete()
+        .eq('id', expense.id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['expenses'] });
+      toast({
+        title: "Dépense supprimée",
+        description: "La dépense a été supprimée avec succès."
+      });
+    }
+  });
+
+  const importExpensesMutation = useMutation({
+    mutationFn: async (expenses: Omit<Expense, 'id' | 'user_id' | 'created_at'>[]) => {
+      if (!user) throw new Error('User not authenticated');
+      
+      const { error } = await supabase
+        .from('expenses')
+        .insert(expenses.map(expense => ({
+          ...expense,
+          user_id: user.id
+        })));
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['expenses'] });
+      toast({
+        title: "Import réussi",
+        description: "Les dépenses ont été importées avec succès."
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Erreur",
+        description: "Une erreur est survenue lors de l'import.",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const handleDeleteCategory = async (category: Category) => {
+    const hasExpenses = expenses.some(e => e.category_id === category.id);
+    if (hasExpenses) {
+      toast({
+        title: "Action impossible",
+        description: "Vous devez d'abord supprimer ou déplacer les dépenses de cette catégorie.",
         variant: "destructive"
       });
       return;
     }
-    await addCategoryMutation.mutateAsync(categoryData);
+    await deleteCategoryMutation.mutateAsync(category);
   };
 
-  const handleEditCategory = async (categoryData: Omit<Category, 'id' | 'user_id' | 'created_at'>) => {
-    if (!editingCategory) return;
-    await updateCategoryMutation.mutateAsync({ ...categoryData, id: editingCategory.id, user_id: user?.id || '' });
-  };
-
-  const handleAddExpense = async (expenseData: Omit<Expense, 'id' | 'user_id' | 'created_at'>) => {
-    await addExpenseMutation.mutateAsync(expenseData);
-  };
-
-  const handleEditExpense = async (expenseData: Omit<Expense, 'id' | 'user_id' | 'created_at'>) => {
-    if (!editingExpense) return;
-    await updateExpenseMutation.mutateAsync({ ...expenseData, id: editingExpense.id, user_id: user?.id || '' });
+  const handleDeleteExpense = async (expense: Expense) => {
+    await deleteExpenseMutation.mutateAsync(expense);
   };
 
   const handleExportCSV = () => {
-    // Export logic here
+    exportToCSV(expenses, categories);
+  };
+
+  const handleImportCSV = async (file: File) => {
+    try {
+      const parsedExpenses = await parseCSV(file, categories);
+      await importExpensesMutation.mutateAsync(parsedExpenses);
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error instanceof Error ? error.message : "Une erreur est survenue lors de l'import",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -159,6 +236,7 @@ const Index = () => {
           setEditingCategory(category);
           setAddCategoryOpen(true);
         }}
+        onDeleteCategory={handleDeleteCategory}
         onAddExpense={() => {
           setEditingExpense(undefined);
           setAddExpenseOpen(true);
@@ -167,7 +245,9 @@ const Index = () => {
           setEditingExpense(expense);
           setAddExpenseOpen(true);
         }}
+        onDeleteExpense={handleDeleteExpense}
         onExportCSV={handleExportCSV}
+        onImportCSV={handleImportCSV}
       />
 
       <AddCategoryDialog 

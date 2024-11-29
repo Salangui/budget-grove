@@ -8,9 +8,12 @@ interface BudgetContentProps {
   expenses: Expense[];
   onAddCategory: () => void;
   onEditCategory: (category: Category) => void;
+  onDeleteCategory: (category: Category) => void;
   onAddExpense: () => void;
   onEditExpense: (expense: Expense) => void;
+  onDeleteExpense: (expense: Expense) => void;
   onExportCSV: () => void;
+  onImportCSV: (file: File) => void;
 }
 
 export const BudgetContent = ({
@@ -18,9 +21,12 @@ export const BudgetContent = ({
   expenses,
   onAddCategory,
   onEditCategory,
+  onDeleteCategory,
   onAddExpense,
   onEditExpense,
-  onExportCSV
+  onDeleteExpense,
+  onExportCSV,
+  onImportCSV
 }: BudgetContentProps) => {
   return (
     <>
@@ -34,6 +40,7 @@ export const BudgetContent = ({
         expenses={expenses}
         onAddCategory={onAddCategory}
         onEditCategory={onEditCategory}
+        onDeleteCategory={onDeleteCategory}
       />
 
       <ExpenseList 
@@ -41,7 +48,9 @@ export const BudgetContent = ({
         expenses={expenses}
         onAddExpense={onAddExpense}
         onEditExpense={onEditExpense}
+        onDeleteExpense={onDeleteExpense}
         onExportCSV={onExportCSV}
+        onImportCSV={onImportCSV}
       />
     </>
   );
