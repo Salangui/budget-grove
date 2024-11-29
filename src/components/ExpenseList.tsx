@@ -41,31 +41,30 @@ export const ExpenseList = ({
         </div>
       </div>
       <Card className="divide-y">
-        {expenses.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-          .map(expense => (
-            <div 
-              key={expense.id}
-              className="p-4 hover:bg-gray-50 cursor-pointer"
-              onClick={() => onEditExpense(expense)}
-            >
-              <div className="flex justify-between items-center">
-                <div className="flex items-center space-x-4">
-                  <div 
-                    className="w-3 h-3 rounded-full" 
-                    style={{ backgroundColor: getCategoryColor(expense.categoryId) }}
-                  />
-                  <div>
-                    <p className="font-medium">{expense.description}</p>
-                    <p className="text-sm text-gray-500">
-                      {getCategoryName(expense.categoryId)} • 
-                      {new Date(expense.date).toLocaleDateString('fr-FR')}
-                    </p>
-                  </div>
+        {expenses.map(expense => (
+          <div 
+            key={expense.id}
+            className="p-4 hover:bg-gray-50 cursor-pointer"
+            onClick={() => onEditExpense(expense)}
+          >
+            <div className="flex justify-between items-center">
+              <div className="flex items-center space-x-4">
+                <div 
+                  className="w-3 h-3 rounded-full" 
+                  style={{ backgroundColor: getCategoryColor(expense.category_id) }}
+                />
+                <div>
+                  <p className="font-medium">{expense.description}</p>
+                  <p className="text-sm text-gray-500">
+                    {getCategoryName(expense.category_id)} • 
+                    {new Date(expense.date).toLocaleDateString('fr-FR')}
+                  </p>
                 </div>
-                <span className="font-medium">{expense.amount}€</span>
               </div>
+              <span className="font-medium">{expense.amount}€</span>
             </div>
-          ))}
+          </div>
+        ))}
       </Card>
     </div>
   );

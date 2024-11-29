@@ -3,14 +3,20 @@ export interface Category {
   name: string;
   budget: number;
   color: string;
+  user_id: string;
+  created_at?: string;
+  is_fake?: boolean;
 }
 
 export interface Expense {
   id: string;
-  categoryId: string;
+  category_id: string;
   amount: number;
   description: string;
   date: string;
+  user_id: string;
+  created_at?: string;
+  is_fake?: boolean;
 }
 
 export interface MonthlyBudget {

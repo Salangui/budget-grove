@@ -7,15 +7,22 @@ import { Category, Expense } from '@/types';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/hooks/useAuth';
 
 const getCurrentMonth = () => {
   const date = new Date();
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 };
 
+const getDaysInMonth = (yearMonth: string) => {
+  const [year, month] = yearMonth.split('-').map(Number);
+  return new Date(year, month, 0).getDate();
+};
+
 const Index = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [currentMonth, setCurrentMonth] = useState(getCurrentMonth());
   const [addCategoryOpen, setAddCategoryOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category>();
@@ -33,7 +40,8 @@ const Index = () => {
       
       if (error) throw error;
       return data;
-    }
+    },
+    enabled: !!user
   });
 
   // Fetch expenses
@@ -41,7 +49,8 @@ const Index = () => {
     queryKey: ['expenses', currentMonth],
     queryFn: async () => {
       const startDate = `${currentMonth}-01`;
-      const endDate = `${currentMonth}-31`;
+      const lastDay = getDaysInMonth(currentMonth);
+      const endDate = `${currentMonth}-${lastDay}`;
       
       const { data, error } = await supabase
         .from('expenses')
@@ -52,15 +61,16 @@ const Index = () => {
       
       if (error) throw error;
       return data;
-    }
+    },
+    enabled: !!user
   });
 
   // Add category mutation
   const addCategoryMutation = useMutation({
-    mutationFn: async (category: Omit<Category, 'id'>) => {
+    mutationFn: async (category: Omit<Category, 'id' | 'user_id' | 'created_at'>) => {
       const { data, error } = await supabase
         .from('categories')
-        .insert([category])
+        .insert([{ ...category, user_id: user?.id }])
         .select()
         .single();
       
@@ -100,10 +110,10 @@ const Index = () => {
 
   // Add expense mutation
   const addExpenseMutation = useMutation({
-    mutationFn: async (expense: Omit<Expense, 'id'>) => {
+    mutationFn: async (expense: Omit<Expense, 'id' | 'user_id' | 'created_at'>) => {
       const { data, error } = await supabase
         .from('expenses')
-        .insert([expense])
+        .insert([{ ...expense, user_id: user?.id }])
         .select()
         .single();
       
@@ -141,22 +151,22 @@ const Index = () => {
     }
   });
 
-  const handleAddCategory = async (categoryData: Oomit<Category, 'id'>) => {
+  const handleAddCategory = async (categoryData: Omit<Category, 'id' | 'user_id' | 'created_at'>) => {
     await addCategoryMutation.mutateAsync(categoryData);
   };
 
-  const handleEditCategory = async (categoryData: Omit<Category, 'id'>) => {
+  const handleEditCategory = async (categoryData: Omit<Category, 'id' | 'user_id' | 'created_at'>) => {
     if (!editingCategory) return;
-    await updateCategoryMutation.mutateAsync({ ...categoryData, id: editingCategory.id });
+    await updateCategoryMutation.mutateAsync({ ...categoryData, id: editingCategory.id, user_id: user?.id || '' });
   };
 
-  const handleAddExpense = async (expenseData: Omit<Expense, 'id'>) => {
+  const handleAddExpense = async (expenseData: Omit<Expense, 'id' | 'user_id' | 'created_at'>) => {
     await addExpenseMutation.mutateAsync(expenseData);
   };
 
-  const handleEditExpense = async (expenseData: Omit<Expense, 'id'>) => {
+  const handleEditExpense = async (expenseData: Omit<Expense, 'id' | 'user_id' | 'created_at'>) => {
     if (!editingExpense) return;
-    await updateExpenseMutation.mutateAsync({ ...expenseData, id: editingExpense.id });
+    await updateExpenseMutation.mutateAsync({ ...expenseData, id: editingExpense.id, user_id: user?.id || '' });
   };
 
   const handleExportCSV = () => {
