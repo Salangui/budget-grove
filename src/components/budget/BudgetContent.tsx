@@ -11,7 +11,7 @@ interface BudgetContentProps {
   onDeleteCategory?: (category: Category) => void;
   onAddExpense: () => void;
   onEditExpense: (expense: Expense) => void;
-  onDeleteExpense?: (expense: Expense) => void;
+  onDeleteExpense: (expense: Expense) => void;
   onExportCSV: () => void;
   onImportCSV: (file: File) => void;
   monthlyBudgets: any[];
@@ -30,9 +30,10 @@ export const BudgetContent = ({
   onImportCSV,
   monthlyBudgets
 }: BudgetContentProps) => {
-  const visibleCategories = categories.filter(c => !c.is_hidden);
+  // On affiche toutes les catégories dans la liste mais on filtre les dépenses
+  const visibleCategories = categories;
   const visibleExpenses = expenses.filter(e => 
-    visibleCategories.some(c => c.id === e.category_id)
+    categories.some(c => c.id === e.category_id && !c.is_hidden)
   );
 
   const getCategoryBudget = (categoryId: string) => {
@@ -47,7 +48,7 @@ export const BudgetContent = ({
   return (
     <div className="space-y-8">
       <BudgetSummary 
-        categories={categoriesWithBudgets}
+        categories={categoriesWithBudgets.filter(c => !c.is_hidden)}
         expenses={visibleExpenses}
       />
 
@@ -61,7 +62,7 @@ export const BudgetContent = ({
       />
 
       <ExpenseList 
-        categories={visibleCategories}
+        categories={categories.filter(c => !c.is_hidden)}
         expenses={visibleExpenses}
         onAddExpense={onAddExpense}
         onEditExpense={onEditExpense}

@@ -1,4 +1,4 @@
-import { Plus, Trash2, Eye, EyeOff, Edit } from 'lucide-react';
+import { Plus, Trash2, Eye, EyeOff } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Category, Expense } from '@/types';
@@ -80,7 +80,7 @@ export const CategoryList = ({
           </Button>
         </div>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
         {categories.map(category => {
           if (!category?.id) return null;
           const spent = getCategoryExpenses(category.id);
@@ -92,22 +92,22 @@ export const CategoryList = ({
             <Card 
               key={category.id}
               className={cn(
-                "p-4 hover:shadow-lg transition-shadow",
+                "p-3 hover:shadow-lg transition-shadow",
                 isOverBudget && "border-red-500",
                 category.is_hidden && "opacity-50"
               )}
             >
               <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center space-x-2">
-                  <h3 className="font-semibold">{category.name}</h3>
                   <div 
                     className="w-3 h-3 rounded-full" 
                     style={{ backgroundColor: category.color }}
                   />
+                  <h3 className="font-semibold truncate">{category.name}</h3>
                   {category.is_hidden ? (
-                    <EyeOff className="h-4 w-4 text-gray-400" />
+                    <EyeOff className="h-4 w-4 text-gray-400 flex-shrink-0" />
                   ) : (
-                    <Eye className="h-4 w-4 text-gray-400" />
+                    <Eye className="h-4 w-4 text-gray-400 flex-shrink-0" />
                   )}
                 </div>
                 {onDeleteCategory && (
@@ -121,29 +121,29 @@ export const CategoryList = ({
                   </Button>
                 )}
               </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
+              <div className="space-y-1 text-sm">
+                <div className="flex justify-between">
                   <span className="text-gray-500">Budget:</span>
                   <span className={cn(
                     "font-medium",
                     isOverBudget && "text-red-500"
                   )}>{budget}€</span>
                 </div>
-                <div className="flex justify-between text-sm">
+                <div className="flex justify-between">
                   <span className="text-gray-500">Dépensé:</span>
                   <span className={cn(
                     "font-medium",
                     isOverBudget && "text-red-500"
                   )}>{spent}€</span>
                 </div>
-                <div className="flex justify-between text-sm">
+                <div className="flex justify-between">
                   <span className="text-gray-500">Restant:</span>
                   <span className={cn(
                     "font-medium",
                     isOverBudget && "text-red-500"
                   )}>{budget - spent}€</span>
                 </div>
-                <div className="relative h-2 bg-gray-200 rounded">
+                <div className="relative h-1.5 bg-gray-200 rounded">
                   <div 
                     className={cn(
                       "absolute h-full rounded",
