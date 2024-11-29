@@ -40,9 +40,13 @@ export const CategoryList = ({
   };
 
   const handleEditCategory = (categoryId: string | undefined) => {
-    if (!categoryId) return;
+    // Skip if categoryId is undefined or empty
+    if (!categoryId?.trim()) return;
+    
     const category = categories.find(c => c.id === categoryId);
-    if (!category) return;
+    // Skip if category is not found
+    if (!category?.id) return;
+    
     onEditCategory(category);
   };
 
@@ -51,8 +55,8 @@ export const CategoryList = ({
     onDeleteCategory(category);
   };
 
-  // Filter out categories without IDs to prevent invalid database queries
-  const validCategories = categories.filter(category => category?.id);
+  // Filter out categories without valid IDs to prevent invalid database queries
+  const validCategories = categories.filter(category => category?.id?.trim());
 
   return (
     <div>
