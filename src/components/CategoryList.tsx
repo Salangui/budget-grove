@@ -40,12 +40,10 @@ export const CategoryList = ({
   };
 
   const handleEditCategory = (categoryId: string | undefined) => {
-    // Skip if categoryId is undefined or empty
-    if (!categoryId?.trim()) return;
+    if (!categoryId) return;
     
     const category = categories.find(c => c.id === categoryId);
-    // Skip if category is not found
-    if (!category?.id) return;
+    if (!category) return;
     
     onEditCategory(category);
   };
@@ -55,8 +53,8 @@ export const CategoryList = ({
     onDeleteCategory(category);
   };
 
-  // Filter out categories without valid IDs to prevent invalid database queries
-  const validCategories = categories.filter(category => category?.id?.trim());
+  // Filter out invalid categories
+  const validCategories = categories.filter(category => category && typeof category.id === 'string' && category.id.length > 0);
 
   return (
     <div>
@@ -64,7 +62,11 @@ export const CategoryList = ({
         <h2 className="text-2xl font-bold">Catégories</h2>
         <div className="flex gap-2">
           <div className="w-64">
-            <Select onValueChange={handleEditCategory}>
+            <Select 
+              onValueChange={(value) => {
+                if (value) handleEditCategory(value);
+              }}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Modifier une catégorie" />
               </SelectTrigger>
