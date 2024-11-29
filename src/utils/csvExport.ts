@@ -7,7 +7,7 @@ export const exportToCSV = (expenses: Expense[], categories: Category[]) => {
     ['Date', 'Catégorie', 'Description', 'Montant'].join(','),
     ...expenses.map(expense => [
       expense.date,
-      categoryMap.get(expense.categoryId),
+      categoryMap.get(expense.category_id),
       expense.description,
       expense.amount.toString()
     ].join(','))
